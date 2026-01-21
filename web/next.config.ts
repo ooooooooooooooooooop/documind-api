@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   output: "standalone",  // 优化 Docker 构建体积
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '100mb',
     },
   },
   async rewrites() {

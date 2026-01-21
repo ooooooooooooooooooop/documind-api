@@ -36,6 +36,7 @@ export default function Home() {
   const [uploadProgress, setUploadProgress] = useState(0); // 新增：上传进度状态
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [fileList, setFileList] = useState<string[]>([]); // 新增：已上传文件列表
+  const [isDragging, setIsDragging] = useState(false); // 新增：拖拽状态
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 页面加载时获取已有的文档列表
@@ -68,11 +69,8 @@ export default function Home() {
     }
   }, [messages]);
 
-  // 处理文件上传
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // 核心上传逻辑
+  const processUpload = async (file: File) => {
     setIsUploading(true);
     setUploadProgress(0); // 重置进度
     const formData = new FormData();
@@ -99,6 +97,51 @@ export default function Home() {
       setMessages(prev => [...prev, { role: "assistant", content: "❌ 文件上传失败，请检查后端服务是否运行正常。" }]);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // 处理文件输入框上传
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await processUpload(file);
+  };
+
+  // 拖拽事件处理
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploading) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) {
+        setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (isUploading) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+        const validExts = [".pdf", ".txt", ".docx", ".xlsx", ".md"];
+        const lowerName = file.name.toLowerCase();
+        if (validExts.some(ext => lowerName.endsWith(ext))) {
+            await processUpload(file);
+        } else {
+            setMessages(prev => [...prev, { role: "assistant", content: "⚠️ 不支持的文件类型。请上传 PDF, TXT, Word, Excel 或 Markdown 文件。" }]);
+        }
     }
   };
 
@@ -153,26 +196,45 @@ export default function Home() {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">DocuMind</h1>
         </div>
 
-        <Card className="p-4 border-dashed border-2 bg-gray-50 dark:bg-zinc-900 dark:border-zinc-700">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <Upload className="h-8 w-8 text-gray-400" />
-            <div className="text-sm text-gray-500">
-              <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:underline font-medium">
-                点击上传
-              </label>
-              <span className="mx-1">或拖拽文件到这里</span>
-              <input 
-                id="file-upload" 
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.txt,.docx,.xlsx,.md"
-                onChange={handleFileUpload}
-                disabled={isUploading}
-              />
+        <div className="relative">
+          <Card 
+            className="p-4 border-dashed border-2 bg-gray-50 dark:bg-zinc-900 dark:border-zinc-700 transition-colors"
+            onDragEnter={handleDragEnter}
+          >
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Upload className="h-8 w-8 text-gray-400" />
+              <div className="text-sm text-gray-500">
+                <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:underline font-medium">
+                  点击上传
+                </label>
+                <span className="mx-1">或拖拽文件到这里</span>
+                <input 
+                  id="file-upload" 
+                  type="file" 
+                  className="hidden" 
+                  accept=".pdf,.txt,.docx,.xlsx,.md"
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+              </div>
+              <p className="text-xs text-gray-400">支持 PDF, TXT, Word, Excel, Markdown (最大 100MB)</p>
             </div>
-            <p className="text-xs text-gray-400">支持 PDF, TXT, Word, Excel, Markdown (最大 50MB)</p>
-          </div>
-        </Card>
+            
+            {isDragging && (
+              <div 
+                className="absolute inset-0 bg-blue-50/90 dark:bg-blue-900/50 z-50 flex items-center justify-center border-2 border-blue-500 border-dashed rounded-lg"
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <div className="flex flex-col items-center gap-2 text-blue-600 dark:text-blue-400 pointer-events-none">
+                  <Upload className="h-10 w-10 animate-bounce" />
+                  <p className="font-medium text-lg">释放以上传文件</p>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
 
         {/* 文件列表区域 */}
         <div className="flex-1 overflow-y-auto flex flex-col gap-2">

@@ -9,12 +9,12 @@ class Settings(BaseSettings):
     OPENAI_API_BASE: str = "https://api.openai.com/v1"
 
     # LLM (推理模型) 配置
-    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "gemini-flash-latest"
     LLM_API_KEY: Optional[str] = None
     LLM_API_BASE: Optional[str] = None
 
     # Embedding (向量模型) 配置
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL: str = "BAAI/bge-large-zh-v1.5"
     EMBEDDING_API_KEY: Optional[str] = None
     EMBEDDING_API_BASE: Optional[str] = None
 

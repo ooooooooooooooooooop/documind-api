@@ -50,14 +50,14 @@ async def upload_document(file: UploadFile = File(...)):
     上传 PDF 或 TXT 文件并建立索引
     """
     try:
-        # 0. 验证文件大小 (50MB = 50 * 1024 * 1024 bytes)
-        MAX_FILE_SIZE = 50 * 1024 * 1024
+        # 0. 验证文件大小 (100MB = 100 * 1024 * 1024 bytes)
+        MAX_FILE_SIZE = 100 * 1024 * 1024
         file.file.seek(0, 2)  # 移动到文件末尾
         file_size = file.file.tell()  # 获取当前位置（即文件大小）
         file.file.seek(0)  # 重置回文件开头，否则后面读取不到内容
         
         if file_size > MAX_FILE_SIZE:
-             raise HTTPException(400, detail="File size too large. Max limit is 50MB.")
+             raise HTTPException(400, detail="File size too large. Max limit is 100MB.")
 
         # 1. 验证文件类型
         supported_types = [
@@ -74,20 +74,35 @@ async def upload_document(file: UploadFile = File(...)):
             raise HTTPException(400, detail="Unsupported file type. Supported: PDF, TXT, DOCX, XLSX, MD")
 
         # 2. 保存文件到临时目录
+        # 处理文件名冲突：如果文件已存在，则添加 (1), (2) 后缀
         file_path = os.path.join(UPLOAD_DIR, file.filename)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        base_name, ext = os.path.splitext(file.filename)
+        counter = 1
+        
+        # 只在文件实际存在时才进行重命名，确保"不存在也加后缀"的问题不会发生
+        if os.path.exists(file_path):
+             while os.path.exists(file_path):
+                file_path = os.path.join(UPLOAD_DIR, f"{base_name}({counter}){ext}")
+                counter += 1
+        
+        try:
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
 
-        # 3. 调用 RAG 引擎处理文件
-        num_chunks = await rag_engine.ingest_file(file_path, file.content_type)
+            # 3. 调用 RAG 引擎处理文件
+            num_chunks = await rag_engine.ingest_file(file_path, file.content_type)
 
-        # 4. 清理临时文件
-        os.remove(file_path)
-
-        return {
-            "message": f"Successfully ingested {file.filename}",
-            "chunks_created": num_chunks,
-        }
+            return {
+                "message": f"Successfully ingested {file.filename}",
+                "chunks_created": num_chunks,
+            }
+        finally:
+            # 4. 清理临时文件 (无论成功还是失败都执行)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"Warning: Failed to delete temp file {file_path}: {e}")
 
     except Exception as e:
         print(f"Error in /upload: {e}")

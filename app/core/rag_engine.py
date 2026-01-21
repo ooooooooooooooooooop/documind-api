@@ -19,7 +19,8 @@ class RAGEngine:
             openai_api_base=settings.effective_embedding_api_base,
             model=settings.EMBEDDING_MODEL,
             check_embedding_ctx_length=False,  # 禁用上下文长度检查
-            dimensions=768,  # 强制指定维度，防止 LangChain 尝试去“探测”模型维度而触发不兼容的调用
+            chunk_size=100,  # 限制批处理大小，避免超过 API 限制 (at most 100 requests in one batch)
+            # dimensions=768,  # 移除强制维度，允许自动探测
             default_headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             },
