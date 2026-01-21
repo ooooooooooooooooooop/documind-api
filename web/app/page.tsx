@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress"; // 新增进度条组件
 
 // 定义消息类型
 interface Message {
@@ -32,6 +33,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0); // 新增：上传进度状态
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [fileList, setFileList] = useState<string[]>([]); // 新增：已上传文件列表
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -72,12 +74,19 @@ export default function Home() {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0); // 重置进度
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
+        },
       });
       setUploadedFile(file.name);
       setFileList(prev => [...prev, file.name]); // 上传成功后加入列表
@@ -161,7 +170,7 @@ export default function Home() {
                 disabled={isUploading}
               />
             </div>
-            <p className="text-xs text-gray-400">支持 PDF, TXT, Word, Excel, Markdown (最大 10MB)</p>
+            <p className="text-xs text-gray-400">支持 PDF, TXT, Word, Excel, Markdown (最大 50MB)</p>
           </div>
         </Card>
 
@@ -191,9 +200,16 @@ export default function Home() {
           ))}
 
           {isUploading && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm animate-pulse">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>正在上传...</span>
+            <div className="flex flex-col gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm animate-pulse">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>
+                  {uploadProgress === 100 
+                    ? "上传完成，正在解析文档，请稍候..." 
+                    : `正在上传... ${uploadProgress}%`}
+                </span>
+              </div>
+              <Progress value={uploadProgress} className="h-2 w-full bg-blue-200" />
             </div>
           )}
         </div>

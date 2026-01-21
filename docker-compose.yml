@@ -14,6 +14,8 @@ services:
     volumes:
       - ./chroma_db:/app/chroma_db # 持久化向量数据
       - ./temp_uploads:/app/temp_uploads # 挂载临时目录
+      - ./app:/app/app # 【新增】挂载源码目录，实现热重载
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # 【新增】覆盖默认启动命令，开启 reload
     restart: unless-stopped
 
   # 前端服务

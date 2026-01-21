@@ -50,6 +50,15 @@ async def upload_document(file: UploadFile = File(...)):
     上传 PDF 或 TXT 文件并建立索引
     """
     try:
+        # 0. 验证文件大小 (50MB = 50 * 1024 * 1024 bytes)
+        MAX_FILE_SIZE = 50 * 1024 * 1024
+        file.file.seek(0, 2)  # 移动到文件末尾
+        file_size = file.file.tell()  # 获取当前位置（即文件大小）
+        file.file.seek(0)  # 重置回文件开头，否则后面读取不到内容
+        
+        if file_size > MAX_FILE_SIZE:
+             raise HTTPException(400, detail="File size too large. Max limit is 50MB.")
+
         # 1. 验证文件类型
         supported_types = [
             "application/pdf", 
