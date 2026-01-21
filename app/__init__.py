@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(
     title="DocuMind API",
     description="A RAG-powered document question-answering engine.",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # 配置 CORS (为将来前端调用做准备)
@@ -17,12 +17,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 async def root():
     """
     根路径检查
     """
     return {"message": "DocuMind API is running", "status": "active"}
+
 
 @app.get("/health")
 async def health_check():

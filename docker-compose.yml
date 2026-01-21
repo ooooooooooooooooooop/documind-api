@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: documind-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./chroma_db:/app/chroma_db # 持久化向量数据
+      - ./temp_uploads:/app/temp_uploads # 挂载临时目录
+    restart: unless-stopped
+
+  # 前端服务
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: documind-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000 # 浏览器端访问 API 的地址
+    depends_on:
+      - api
+    restart: unless-stopped
