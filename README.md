@@ -12,7 +12,7 @@ DocuMind is a lightweight, high-performance RAG (Retrieval-Augmented Generation)
 - **Smart Retrieval**: Uses semantic search to find relevant context for answers.
 - **LLM Integration**: Powered by OpenAI (or compatible) models for high-quality responses.
 - **Docker Ready**: Fully containerized for easy deployment.
-- **WAF Bypass**: Built-in mechanisms to handle API proxy restrictions (e.g., User-Agent spoofing).
+- **Proxy-aware**: Optional per-request `User-Agent` header override for API gateways that require it.
 
 ## 🛠️ Tech Stack
 
